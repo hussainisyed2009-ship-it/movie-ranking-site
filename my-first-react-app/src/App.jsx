@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import Search from './components/search'
+import Spinner from './components/spinner'
+import MovieCard from './components/Moviecard'
 
 const API_BASE_URL = 'https://api.themoviedb.org/3'
 
@@ -12,20 +14,26 @@ const API_OPTIONS = {
     Authorization: `Bearer ${API_KEY}`
   }
 }
+const endpoint = `${API_BASE_URL}/discover/movie?sort_by=popularity.desc`;
 
 
 const App = () => {
+  
   const [searchTerm, setSearchTerm] = useState("");
 
   const [errorMessage, setErrorMessage] = useState("");
 
+  const [isLoading, setIsLoading] = useState(false);
+  const [movieList, setMovieList] = useState([]);
 
   const fetchMovies = async () => {
-    try {
-      const endpoint = `${API_BASE_URL}/discover/movie?sort_by=popularity.desc`;
+    setIsLoading(true);
+    setErrorMessage('');
 
+    try {      
       const response = await fetch(endpoint, API_OPTIONS)
 
+      
 
       if (!response.ok) {
         throw new Error('failed to get movies');
@@ -34,9 +42,20 @@ const App = () => {
       const data = await response.json();
 
       console.log(data);
+
+      if (data.response == 'False') {
+        setErrorMessage(data.Error || 'Failed to fetch movies');
+        setMovieList([]);
+        return;
+      }
+
+      setMovieList(data.results || [])
+
     } catch (error) {
       console.log(`Error fetching movies: ${error}`)
       setErrorMessage('Error fetching movies. Please Try Again.');
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -57,9 +76,19 @@ const App = () => {
           </header>
 
           <section className='all-movies'>
-            <h2>All Movies</h2>
+            <h2 className='mt-[40px]'>All Movies</h2>
 
-            {errorMessage && <p className="text-red-500">{errorMessage}</p>}
+            {isLoading ? (
+              <Spinner/>
+            ) : errorMessage ? (
+              <p className="text-red-50">{errorMessage}</p>
+            ) : 
+            <ul>
+              {movieList.map((movie) => (
+                <MovieCard key={movie.id} movie={movie}/>
+              ))}
+            </ul>
+            }
           </section>
       </div>
     </main>
